@@ -26,6 +26,9 @@ export class ExpressController {
            next();
         });
 
+        // call pre-init
+        this.beforeInit();
+
         // init routes
         if (this.decoratedMethods) {
             this.decoratedMethods.forEach(path => {
@@ -33,6 +36,13 @@ export class ExpressController {
             });
         }
     }
+
+    /**
+     * Apply additional express middleware or pre-init
+     * stuff before adding controllers
+     *
+     */
+    public beforeInit(){}
 
     public applyFilter(filter: IFilterMiddleware): void {
         this.filter = filter;
