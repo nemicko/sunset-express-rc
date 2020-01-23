@@ -108,12 +108,20 @@ export class ExpressController {
 export function Get(path: string, filter?: IFilterMiddleware) {
     return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
         if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
-        target.decoratedMethods.push({
-            method: "get",
-            path: path,
-            target: descriptor.value,
-            filter: filter
-        });
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "get");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "get",
+                path: path,
+                target: descriptor.value,
+                filter: filter
+            });
+        }
     };
 }
 
@@ -125,12 +133,20 @@ export function Get(path: string, filter?: IFilterMiddleware) {
 export function Post(path: string, filter?: IFilterMiddleware) {
     return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
         if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
-        target.decoratedMethods.push({
-            method: "post",
-            path: path,
-            target: descriptor.value,
-            filter: filter
-        });
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "post");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "post",
+                path: path,
+                target: descriptor.value,
+                filter: filter
+            });
+        }
     };
 }
 
@@ -142,12 +158,20 @@ export function Post(path: string, filter?: IFilterMiddleware) {
 export function Put(path: string, filter?: IFilterMiddleware) {
     return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
         if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
-        target.decoratedMethods.push({
-            method: "put",
-            path: path,
-            target: descriptor.value,
-            filter: filter
-        });
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "put");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "put",
+                path: path,
+                target: descriptor.value,
+                filter: filter
+            });
+        }
     };
 }
 
@@ -159,11 +183,19 @@ export function Put(path: string, filter?: IFilterMiddleware) {
 export function Delete(path: string, filter?: IFilterMiddleware) {
     return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
         if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
-        target.decoratedMethods.push({
-            method: "delete",
-            path: path,
-            target: descriptor.value,
-            filter: filter
-        });
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "delete");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "delete",
+                path: path,
+                target: descriptor.value,
+                filter: filter
+            });
+        }
     };
 }
