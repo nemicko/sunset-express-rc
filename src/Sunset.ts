@@ -1,21 +1,19 @@
 import *  as express from "express";
 
-import {Express} from "express";
 import {HttpServer} from "./HttpServer";
-import {ExpressRouter} from "./ExpressRouter";
+import {ExpressApplication} from "./ExpressApplication";
 
 export class Sunset{
 
-    private httpServer: HttpServer;
+    private readonly httpServer: HttpServer;
+    private readonly port: number;
 
-    private port: number;
-
-    private application: Express;
-    private registeredRoutes: Array<string>;
+    private application: express.Application;
+    private deployedApplications: Array<string>;
 
     constructor(port: number){
         this.port = port;
-        this.registeredRoutes = [];
+        this.deployedApplications = [];
         this.httpServer = new HttpServer();
     }
 
@@ -26,16 +24,12 @@ export class Sunset{
         return true;
     }
 
-    public terminate():boolean{
-        return this.httpServer.terminate();
-    }
-
-    public registerRoute(path: string, route: ExpressRouter):boolean{
-        if (this.registeredRoutes.indexOf(path) != -1){
+    public deployApplication(path: string, app: ExpressApplication):boolean{
+        if (this.deployedApplications.indexOf(path) != -1){
             throw new Error("URL path already used");
         }
         try {
-            this.application.use(path, route.getExpressRouter());
+            this.application.use(path, app.getApplication());
             return true;
         } catch (exception) {
             throw new Error("Failed injecting route");
@@ -46,12 +40,16 @@ export class Sunset{
         this.application.use(any);
     }
 
-    public getApplication():Express{
+    public getApplication():express.Application{
         return this.application;
     }
 
     public getHttpServer():HttpServer{
         return this.httpServer;
+    }
+
+    public terminate():boolean{
+        return this.httpServer.terminate();
     }
 
 }
