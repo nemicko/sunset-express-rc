@@ -1,24 +1,30 @@
 import * as express from "express";
 import {IFilterMiddleware} from "./IFilterMiddleware";
 import {IExtendedRequest} from "./IExtendedRequest";
+import {SyncedRequestHandler} from "./SyncedRequestHandler";
 
 declare type RequestMapping = {
     method: string,
     path: string,
     target: any,
-    filter?: IFilterMiddleware
+    filter?: IFilterMiddleware,
+    synced: boolean,
+    bufferSize: number
 }
 
 export class ExpressController {
 
     private filter: IFilterMiddleware;
     private router: express.Router;
+    private syncedBuffer: Map<string, Array<any>>;
+    private syncedBufferProcess: Map<string, boolean>;
 
     private decoratedMethods: Array<RequestMapping>;
 
     constructor() {
         this.router = express.Router();
-
+        this.syncedBuffer = new Map<string, Array<any>>();
+        this.syncedBufferProcess = new Map<string, boolean>();
 
         this.router.use((req, res, next) => {
            if (this.filter)
@@ -32,9 +38,15 @@ export class ExpressController {
         // init routes
         if (this.decoratedMethods) {
             this.decoratedMethods.forEach(path => {
-                this[path.method](path.path, path.target.bind(this), path.filter);
+                if (path.synced){
+                    const handler = new SyncedRequestHandler(path.bufferSize, path.target.bind(this));
+                    this[path.method](path.path, handler.getHandler(), path.filter);
+                } else {
+                    this[path.method](path.path, path.target.bind(this), path.filter);
+                }
             });
         }
+
     }
 
     /**
@@ -149,6 +161,38 @@ export function Post(path: string, filter?: IFilterMiddleware) {
         }
     };
 }
+
+/**
+ * SyncedPOST Request
+ *
+ * Controls amount of parallel requests, with awaiting for promise to complete
+ *
+ * @param {string} path
+ * @returns {(target: any, propertyKey: string, descriptor: PropertyDescriptor) => any}
+ */
+export function SyncedPost(path: string, bufferSize: number, filter?: IFilterMiddleware) {
+    return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
+        if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "post");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "post",
+                path: path,
+                target: descriptor.value,
+                filter: filter,
+                synced: true,
+                bufferSize: bufferSize
+            });
+        }
+    };
+}
+
+
 
 /**
  * PUT Request

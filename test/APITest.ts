@@ -123,6 +123,50 @@ describe('Sunset Route/Controller Test', function () {
         });
     });
 
+    it("Multiple Async Calls (Fail)", async () => {
+        const requests = [];
+        for(let i=0;i<100;i++){
+            requests.push(requestHelper("async", i));
+        }
+
+        const matches = await Promise.all(requests);
+
+        expect(matches.some(match => match === false)).to.be.true;
+
+        return true;
+    }).timeout(5000);
+
+    it("Multiple Synced Calls", async () => {
+        const requests = [];
+        for(let i=0;i<100;i++){
+            requests.push(requestHelper("synced", i));
+        }
+
+        const matches = await Promise.all(requests);
+
+        expect(matches.some(match => match === false)).to.be.false;
+
+        return true;
+    }).timeout(15000);
+
+
 });
 
-
+const requestHelper = (path, index) => {
+    return new Promise((resolve) => {
+        request({
+            method: 'post',
+            url: 'http://localhost:3000/api/'+path+'/' + index,
+            headers: {
+                "content-type": "application/json",
+            },
+            json: true
+        }, function (error, response, body) {
+            //expect(response.statusCode).to.be.equal(200);
+            if (response.statusCode == 200)
+                resolve(response.body.match);
+            else
+                resolve(null);
+        });
+    })
+}

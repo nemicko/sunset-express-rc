@@ -1,6 +1,7 @@
 import {Sunset} from "../src/Sunset";
 import {TestAPI} from "./app/TestAPI";
 import {StaticRoute} from "../src/StaticRoute";
+import {Application} from "./app/Application";
 
 var bodyParser = require('body-parser')
 
@@ -24,12 +25,14 @@ before(done => {
 
     sunset.use(bodyParser.json());
 
-    sunset.registerRoute("/api", (new TestAPI()));
+    const app = new Application();
+    sunset.deployApplication("/", app);
+
+    app.deployRoute("/api", (new TestAPI()));
 
     let staticRoute = new StaticRoute();
     staticRoute.setMapping("/", "/public/media/xxx/xx");
-
-    sunset.registerRoute("/", staticRoute);
+    app.deployRoute("/", staticRoute);
 
     done();
 
