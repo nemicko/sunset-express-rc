@@ -138,6 +138,33 @@ export function Get(path: string, filter?: IFilterMiddleware) {
 }
 
 /**
+ * GET Request Synced
+ * @param {string} path
+ * @returns {(target: any, propertyKey: string, descriptor: PropertyDescriptor) => any}
+ */
+export function SyncedGet(path: string, bufferSize: number, filter?: IFilterMiddleware) {
+    return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
+        if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "get");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "get",
+                path: path,
+                target: descriptor.value,
+                filter: filter,
+                synced: true,
+                bufferSize: bufferSize
+            });
+        }
+    };
+}
+
+/**
  * POST Request
  * @param {string} path
  * @returns {(target: any, propertyKey: string, descriptor: PropertyDescriptor) => any}
@@ -218,6 +245,34 @@ export function Put(path: string, filter?: IFilterMiddleware) {
         }
     };
 }
+
+/**
+ * PUT Request Synced
+ * @param {string} path
+ * @returns {(target: any, propertyKey: string, descriptor: PropertyDescriptor) => any}
+ */
+export function SyncedPut(path: string, bufferSize: number, filter?: IFilterMiddleware) {
+    return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
+        if (!target.decoratedMethods) target.decoratedMethods = Array<RequestMapping>();
+
+        const decoratedMethod = target.decoratedMethods.find(element => element.path === path && element.method === "put");
+
+        if (decoratedMethod) {
+            decoratedMethod.target = descriptor.value;
+            decoratedMethod.filter = filter;
+        } else {
+            target.decoratedMethods.push({
+                method: "put",
+                path: path,
+                target: descriptor.value,
+                filter: filter,
+                synced: true,
+                bufferSize: bufferSize
+            });
+        }
+    };
+}
+
 
 /**
  * DELETE Request

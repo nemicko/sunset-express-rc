@@ -1,5 +1,6 @@
 import {IExtendedRequest} from "./IExtendedRequest";
 import * as express from "express";
+import events = require('events');
 
 /**
  * Force Synchronized Request processing
@@ -17,6 +18,8 @@ export class SyncedRequestHandler {
         this.bufferSize = bufferSize;
 
         this.syncedBuffer = new Array();
+
+
     }
 
     public getHandler(){
@@ -33,6 +36,9 @@ export class SyncedRequestHandler {
         await handler(request.req, request.res, request.next);
         this.syncedBufferProcess = false;
 
+        // update response (object) with bufferState
+        request.res.syncedBuffer = this.syncedBuffer.length;
+
         // check if more requests in buffer and continue
         if (this.syncedBuffer.length > 0)
             await this.proccessSyncedPost(handler);
@@ -40,6 +46,8 @@ export class SyncedRequestHandler {
 
     private intermediateHandler(req: IExtendedRequest, res: express.Response, next: express.NextFunction) {
         if (this.syncedBuffer.length > this.bufferSize){
+            // @ts-ignore
+            res.syncedRejection = true;
             return res.sendStatus(429);
         } else {
             this.syncedBuffer.push({
