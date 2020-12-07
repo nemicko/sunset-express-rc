@@ -149,8 +149,39 @@ describe('Sunset Route/Controller Test', function () {
         return true;
     }).timeout(15000);
 
+    it("Multiple Synced Calls with Exceptions", async () => {
+        const requests = [];
+        for(let i=0;i<100;i++){
+            requests.push(requestHelperResponseCode("synced-exception", i));
+        }
+
+        const matches = await Promise.all(requests);
+
+        expect(matches[5]).to.equal(500);
+        expect(matches[10]).to.equal(null);
+
+        return true;
+    }).timeout(15000);
 
 });
+
+const requestHelperResponseCode = (path, index) => {
+    return new Promise((resolve) => {
+        request({
+            method: 'post',
+            url: 'http://localhost:3000/api/'+path+'/' + index,
+            headers: {
+                "content-type": "application/json",
+            },
+            json: true
+        }, function (error, response, body) {
+            if (error)
+                return resolve(null);
+
+            resolve(response.statusCode);
+        });
+    })
+}
 
 const requestHelper = (path, index) => {
     return new Promise((resolve) => {
@@ -162,7 +193,6 @@ const requestHelper = (path, index) => {
             },
             json: true
         }, function (error, response, body) {
-            //expect(response.statusCode).to.be.equal(200);
             if (response.statusCode == 200)
                 resolve(response.body.match);
             else

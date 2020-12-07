@@ -5,6 +5,7 @@ export class TestController extends ExpressController{
 
     private bufferSync = [];
     private bufferAsync = [];
+    private bufferSyncedException = [];
 
     constructor(){
         super();
@@ -12,6 +13,7 @@ export class TestController extends ExpressController{
         for(let i=0;i<1000;i++){
             this.bufferSync.push(i);
             this.bufferAsync.push(i);
+            this.bufferSyncedException.push(i);
         }
 
         this.get("/:param1", this.getRequest);
@@ -127,6 +129,32 @@ export class TestController extends ExpressController{
         const valueShift = this.bufferSync.shift();
 
         return res.send({ match: valueShift == value });
+    }
+
+
+    /**
+     * Post request synced with exception handling
+     */
+    @SyncedPost("/synced-exception/:index", 15)
+    public async syncedPostException(req: express.Request, res: express.Response, next: express.NextFunction): Promise<any> {
+
+        // do some async process
+        await this.doWait();
+        await this.doWait();
+        await this.doWait();
+
+        // just return 500
+        if (parseInt(req.params.index) == 5) {
+            throw new Error("Example Exception");
+        }
+
+        // socket was destroyed (timeout, connection error, etc..)
+        if (parseInt(req.params.index) == 10) {
+            res.destroy(new Error("destroyed"));
+            return;
+        }
+
+        return res.send({ match: true });
     }
 
     doWait(): Promise<any> {

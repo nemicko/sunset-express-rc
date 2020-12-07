@@ -9,6 +9,7 @@ export class SyncedRequestHandler {
 
     private syncedBuffer: Array<any>;
     private syncedBufferProcess: boolean;
+    private exceptionsCount: number = 0;
 
     private readonly bufferSize: number;
     private readonly handler: (req: IExtendedRequest, res: express.Response, next: express.NextFunction) => any;
@@ -18,30 +19,42 @@ export class SyncedRequestHandler {
         this.bufferSize = bufferSize;
 
         this.syncedBuffer = new Array();
-
-
     }
 
     public getHandler(){
         return this.intermediateHandler.bind(this);
     }
 
-    private async proccessSyncedPost(handler) {
+    private counter = 0;
+
+    private proccessSyncedPost(handler) {
         if (this.syncedBufferProcess)
             return;
 
         // process request
         this.syncedBufferProcess = true;
         const request = this.syncedBuffer.shift();
-        await handler(request.req, request.res, request.next);
-        this.syncedBufferProcess = false;
+        handler(request.req, request.res, request.next)
+            .then(success => {})
+            .catch(exception => {
+                // pass on internal exception
+                if (request.res.destroyed){
+                    request.req.destroy();
+                } else {
+                    request.res.status(500).send();
+                }
+                throw exception;
+            })
+            .finally(() => {
+                this.syncedBufferProcess = false;
 
-        // update response (object) with bufferState
-        request.res.syncedBuffer = this.syncedBuffer.length;
+                // update response (object) with bufferState
+                request.res.syncedBuffer = this.syncedBuffer.length;
 
-        // check if more requests in buffer and continue
-        if (this.syncedBuffer.length > 0)
-            await this.proccessSyncedPost(handler);
+                // check if more requests in buffer and continue
+                if (this.syncedBuffer.length > 0)
+                    this.proccessSyncedPost(handler);
+            });
     };
 
     private intermediateHandler(req: IExtendedRequest, res: express.Response, next: express.NextFunction) {
@@ -50,6 +63,7 @@ export class SyncedRequestHandler {
             res.syncedRejection = true;
             return res.sendStatus(429);
         } else {
+
             this.syncedBuffer.push({
                 req: req,
                 res: res,

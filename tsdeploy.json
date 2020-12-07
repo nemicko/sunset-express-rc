@@ -1,23 +1,17 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
+    "target": "es2017",
     "moduleResolution": "node",
     "noImplicitAny": false,
     "outDir": "lib",
     "rootDir": "src",
     "declaration": true,
-    "experimentalDecorators": true,
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "types": [
-      "@types/node"
-    ]
+    "experimentalDecorators": true
   },
   "exclude": [
     "node_modules",
     "test",
     "lib"
   ]
-}
+
