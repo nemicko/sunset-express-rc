@@ -1,6 +1,5 @@
 import {IExtendedRequest} from "./IExtendedRequest";
 import * as express from "express";
-import events = require('events');
 
 /**
  * Force Synchronized Request processing
@@ -9,7 +8,6 @@ export class SyncedRequestHandler {
 
     private syncedBuffer: Array<any>;
     private syncedBufferProcess: boolean;
-    private exceptionsCount: number = 0;
 
     private readonly bufferSize: number;
     private readonly handler: (req: IExtendedRequest, res: express.Response, next: express.NextFunction) => any;
@@ -19,22 +17,34 @@ export class SyncedRequestHandler {
         this.bufferSize = bufferSize;
 
         this.syncedBuffer = new Array();
+
+        /*
+        setInterval(() => {
+            console.log(this.syncedBuffer.length);
+            this.proccessSyncedPost();
+        }, 1000);*/
     }
 
     public getHandler(){
         return this.intermediateHandler.bind(this);
     }
 
-    private counter = 0;
-
-    private proccessSyncedPost(handler) {
-        if (this.syncedBufferProcess)
+    private proccessSyncedPost() {
+        if (this.syncedBuffer.length == 0 || this.syncedBufferProcess)
             return;
 
         // process request
         this.syncedBufferProcess = true;
         const request = this.syncedBuffer.shift();
-        handler(request.req, request.res, request.next)
+
+        // check if request still valid
+        if (request.res.destroyed){
+            request.req.destroy();
+            this.syncedBufferProcess = false;
+            return this.proccessSyncedPost();
+        }
+
+        this.handler(request.req, request.res, request.next)
             .then(success => {})
             .catch(exception => {
                 // pass on internal exception
@@ -43,33 +53,34 @@ export class SyncedRequestHandler {
                 } else {
                     request.res.status(500).send();
                 }
-                throw exception;
             })
             .finally(() => {
-                this.syncedBufferProcess = false;
-
                 // update response (object) with bufferState
                 request.res.syncedBuffer = this.syncedBuffer.length;
 
+                // enable next process
+                this.syncedBufferProcess = false;
+
                 // check if more requests in buffer and continue
-                if (this.syncedBuffer.length > 0)
-                    this.proccessSyncedPost(handler);
+                this.proccessSyncedPost();
             });
     };
 
     private intermediateHandler(req: IExtendedRequest, res: express.Response, next: express.NextFunction) {
-        if (this.syncedBuffer.length > this.bufferSize){
+        if (this.syncedBuffer.length >= this.bufferSize){
             // @ts-ignore
             res.syncedRejection = true;
-            return res.sendStatus(429);
+            // @ts-ignore
+            res.syncedBuffer = this.syncedBuffer.length;
+            res.sendStatus(429);
         } else {
-
             this.syncedBuffer.push({
                 req: req,
                 res: res,
-                next: next
+                next: next,
+                timeout: null
             });
-            this.proccessSyncedPost(this.handler);
+            this.proccessSyncedPost();
         }
     }
 

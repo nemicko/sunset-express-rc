@@ -38,7 +38,11 @@ before(done => {
 
 });
 
-after(function () {
-    sunset.terminate();
+after(function (done) {
+    this.timeout(200000);
+    setTimeout(() => {
+        sunset.terminate();
+        done();
+    }, 10000);
 });
 

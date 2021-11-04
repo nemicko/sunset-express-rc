@@ -1,6 +1,6 @@
 {
   "name": "sunset-express-rc",
-  "version": "1.3.5",
+  "version": "1.3.11",
   "description": "Route-Controller-* Express TypeScript Wrapper",
   "main": "lib/Sunset.js",
   "typings": "lib/Sunset",
